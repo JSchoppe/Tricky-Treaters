@@ -6,18 +6,12 @@ public abstract class Tower : MonoBehaviour
 {
     protected NodeGrid grid;
 
-    protected Vector2Int coordinate;
+    protected Vector2 location;
 
-
-    // Start is called before the first frame update
-    void Start()
+    public virtual void OnPlacement(NodeGrid inGrid)
     {
-        
+        grid = inGrid;
+        location = transform.position;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
