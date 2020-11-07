@@ -5,9 +5,30 @@ using UnityEngine;
 
 public sealed class NodeGrid : MonoBehaviour
 {
+    [SerializeField] private WaveManager waveManager = null;
+
+
     public float GridUnit { get { return gridUnit; } }
 
     public Vector2 OriginTile { get { return (Vector2)transform.position + 0.5f * GridUnit * Vector2.one; } }
+
+    private EnemyPath[] enemyPaths;
+
+    public int Width { get { return width; } }
+    public int Height { get { return height; } }
+
+    public bool IsTileBuildLegal(int x, int y)
+    {
+        return !illegalTiles[x, y];
+    }
+
+    public void MarkTileOccupied(int x, int y)
+    {
+        tileIsBlocked[x, y] = true;
+        illegalTiles[x, y] = true;
+        MarkTilesIllegal();
+        GridUpdated?.Invoke();
+    }
 
     [SerializeField] private float gridUnit = 1f;
     [SerializeField] private int width = 3;
@@ -22,14 +43,17 @@ public sealed class NodeGrid : MonoBehaviour
         if (height < 1)
             height = 1;
         InitializePathing();
+        if (waveManager != null)
+            waveManager.OnValidateWaves();
     }
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.green;
-        for (int x = 0; x <= width; x++)
+        int x, y;
+        Gizmos.color = Color.blue;
+        for (x = 0; x <= width; x++)
             Gizmos.DrawRay(transform.position + x * gridUnit * Vector3.right,
                 Vector3.up * gridUnit * height);
-        for (int y = 0; y <= height; y++)
+        for (y = 0; y <= height; y++)
             Gizmos.DrawRay(transform.position + y * gridUnit * Vector3.up,
                 Vector3.right * gridUnit * width);
         Gizmos.color = Color.red;
@@ -37,23 +61,60 @@ public sealed class NodeGrid : MonoBehaviour
         {
             foreach (Vector2Int tile in blockedTiles)
             {
+                float inset = gridUnit / 4f;
                 Vector2 bottomLeft = (Vector2)transform.position +
                     new Vector2(tile.x * gridUnit, tile.y * gridUnit);
                 Vector2 topLeft = bottomLeft + Vector2.up * gridUnit;
                 Vector2 bottomRight = bottomLeft + Vector2.right * gridUnit;
                 Vector2 topRight = new Vector2(bottomRight.x, topLeft.y);
-                Gizmos.DrawLine(bottomLeft, topRight);
-                Gizmos.DrawLine(topLeft, bottomRight);
+
+                bottomLeft += inset * new Vector2(1, 1);
+                topRight += inset * new Vector2(-1, -1);
+                topLeft += inset * new Vector2(1, -1);
+                bottomRight += inset * new Vector2(-1, 1);
+
+                Gizmos.DrawLine(bottomLeft, topLeft);
+                Gizmos.DrawLine(topLeft, topRight);
+                Gizmos.DrawLine(topRight, bottomRight);
+                Gizmos.DrawLine(bottomRight, bottomLeft);
+            }
+        }
+        Gizmos.color = Color.yellow;
+        for (x = 0; x < width; x++)
+        {
+            for (y = 0; y < height; y++)
+            {
+                if (illegalTiles[x, y])
+                {
+                    float inset = gridUnit / 8f;
+                    Vector2 bottomLeft = (Vector2)transform.position +
+                        new Vector2(x * gridUnit, y * gridUnit);
+                    Vector2 topLeft = bottomLeft + Vector2.up * gridUnit;
+                    Vector2 bottomRight = bottomLeft + Vector2.right * gridUnit;
+                    Vector2 topRight = new Vector2(bottomRight.x, topLeft.y);
+
+                    bottomLeft += inset * new Vector2(1, 1);
+                    topRight += inset * new Vector2(-1, -1);
+                    topLeft += inset * new Vector2(1, -1);
+                    bottomRight += inset * new Vector2(-1, 1);
+
+                    Gizmos.DrawLine(bottomLeft, topLeft);
+                    Gizmos.DrawLine(topLeft, topRight);
+                    Gizmos.DrawLine(topRight, bottomRight);
+                    Gizmos.DrawLine(bottomRight, bottomLeft);
+                }
             }
         }
     }
 
     private bool[,] tileIsBlocked;
 
+    private bool[,] illegalTiles;
+
     /// <summary>
     /// Bind to this if your code needs to react to a change in available paths.
     /// </summary>
-    public event Action OnGridUpdated;
+    public event Action GridUpdated;
 
 
     // Start is called before the first frame update
@@ -65,15 +126,42 @@ public sealed class NodeGrid : MonoBehaviour
     private void InitializePathing()
     {
         tileIsBlocked = new bool[width, height];
+        illegalTiles = new bool[width, height];
         foreach (Vector2Int tile in blockedTiles)
+        {
             tileIsBlocked[tile.x, tile.y] = true;
+            illegalTiles[tile.x, tile.y] = true;
+        }
         routeData = new RouteNodeData[width, height];
+        enemyPaths = waveManager.GetAllEnemyPaths();
+        MarkTilesIllegal();
+    }
+
+    private void MarkTilesIllegal()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (!illegalTiles[x, y])
+                {
+                    tileIsBlocked[x, y] = true;
+                    foreach (EnemyPath path in enemyPaths)
+                        if (!TryFindRoute(path.start, path.end, out _))
+                            illegalTiles[x, y] = true;
+                    tileIsBlocked[x, y] = false;
+                }
+            }
+        }
     }
 
     private RouteNodeData[,] routeData;
 
-    public bool TryFindRoute(ref Vector2Int start, ref Vector2Int end, out Vector2Int[] path)
+    public bool TryFindRoute(Vector2Int start, Vector2Int end, out Vector2Int[] path)
     {
+        if (routeData == null)
+            InitializePathing();
+
         // If at the end, go directly there.
         if (start.x == end.x && start.y == end.y)
         {
