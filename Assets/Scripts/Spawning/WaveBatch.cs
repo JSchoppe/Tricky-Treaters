@@ -109,6 +109,7 @@ public sealed class WaveBatch : MonoBehaviour
             newEnemy.parentBatch = this;
             newEnemy.StartRoute();
             newEnemy.Defeated += OnEnemyDefeated;
+            newEnemy.ReachedDestination += OnEnemyReachedDestination;
         }
     }
 
@@ -120,6 +121,10 @@ public sealed class WaveBatch : MonoBehaviour
             waveManager.Grid.GridUpdated -= OnGridUpdated;
             BatchComplete?.Invoke(this);
         }
+    }
+    private void OnEnemyReachedDestination()
+    {
+        waveManager.PlayerState.Lives--;
     }
 
     // Calculates a default best path for

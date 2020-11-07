@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Represents an enemy pathway on a grid.
@@ -18,7 +19,9 @@ public sealed class WaveManager : MonoBehaviour
     public event Action WaveComplete;
 
     [SerializeField] private NodeGrid grid = null;
+    [SerializeField] private PlayerState playerState = null;
     
+    public PlayerState PlayerState { get { return playerState; } }
 
     public NodeGrid Grid { get { return grid; } }
 
@@ -62,6 +65,17 @@ public sealed class WaveManager : MonoBehaviour
     public void TriggerWave()
     {
         currentWave++;
+        // TODO this should not be hard coded here :'(
+        switch (currentWave)
+        {
+            case 1:
+                AudioSingleton.PlayBackgroundMusic(BackgroundTrack.Synth);
+                break;
+            case 2:
+                AudioSingleton.PlayBackgroundMusic(BackgroundTrack.Rock);
+                break;
+        }
+
         foreach (WaveBatch batch in waveStates[currentWave].Keys)
             batch.BeginWave();
     }
@@ -81,7 +95,11 @@ public sealed class WaveManager : MonoBehaviour
         if (isWaveComplete)
         {
             if (currentWave == waveStates.Count - 1)
+            {
                 AllWavesComplete?.Invoke();
+                // TODO this should not be done here!!!
+                SceneManager.LoadScene("Menu");
+            }
             else
                 WaveComplete?.Invoke();
         }

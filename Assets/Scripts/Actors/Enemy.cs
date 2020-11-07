@@ -12,6 +12,8 @@ public class Enemy : NodeMover
     /// </summary>
     public static List<Enemy> AllEnemies { get; private set; }
 
+    public event Action ReachedDestination;
+
     static Enemy()
     {
         AllEnemies = new List<Enemy>();
@@ -27,10 +29,9 @@ public class Enemy : NodeMover
 
     public virtual void Hit(int damage)
     {
-        Debug.Log("Hit");
         hitPoints -= damage;
         if (hitPoints <= 0)
-            OnRouteComplete();
+            OnDefeated();
     }
 
     public override void StartRoute()
@@ -48,6 +49,15 @@ public class Enemy : NodeMover
     }
 
     protected override void OnRouteComplete()
+    {
+        ReachedDestination?.Invoke();
+        Defeated?.Invoke();
+        AllEnemies.Remove(this);
+        // TODO: gameobjects should be cached
+        // and reused, or use ECS.
+        Destroy(gameObject);
+    }
+    protected void OnDefeated()
     {
         Defeated?.Invoke();
         AllEnemies.Remove(this);
