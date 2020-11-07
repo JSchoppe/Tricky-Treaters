@@ -1,9 +1,16 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-public class Menu : MonoBehaviour
+
+public sealed class MainMenuInteraction : MonoBehaviour
 {
-   public void SceneMain()
+    public void Start()
+    {
+        AudioSingleton.PlayBackgroundMusic(BackgroundTrack.Waltz);
+    }
+
+
+    public void SceneMain()
     {
         SceneManager.LoadScene("StageA1");
     }
