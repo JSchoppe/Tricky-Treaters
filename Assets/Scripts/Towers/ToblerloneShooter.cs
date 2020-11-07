@@ -59,7 +59,7 @@ public sealed class ToblerloneShooter : Tower
                 if (closestEnemy != null)
                 {
                     Vector2 enemyDirection = closestEnemy.Position - location;
-                    float startAngle = Mathf.Atan2(enemyDirection.x, enemyDirection.y)
+                    float startAngle = Mathf.Atan2(enemyDirection.y, enemyDirection.x)
                         - shotSpreadRadians / 2f;
                     for (int i = 0; i < shotCount; i++)
                     {
@@ -68,8 +68,8 @@ public sealed class ToblerloneShooter : Tower
                         newProjectile.transform.position = transform.position;
                         newProjectile.velocity = new Vector2
                         {
-                            x = Mathf.Sin(angle) * scaledShotSpeed,
-                            y = Mathf.Cos(angle) * scaledShotSpeed
+                            x = Mathf.Cos(angle) * scaledShotSpeed,
+                            y = Mathf.Sin(angle) * scaledShotSpeed
                         };
                         newProjectile.damage = shotDamage;
                         newProjectile.radius = shotRadius;
