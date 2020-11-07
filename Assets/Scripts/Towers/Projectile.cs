@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// TODO this is horrendous x_x
 /// <summary>
 /// Very simple class that handles projectiles.
 /// </summary>
-public sealed class Projectile : MonoBehaviour
+public class Projectile : MonoBehaviour
 {
     public Vector2 velocity;
     public int damage;
@@ -13,7 +14,7 @@ public sealed class Projectile : MonoBehaviour
     public float radius;
     public float distanceLife;
 
-    private List<Enemy> enemiesPierced;
+    protected List<Enemy> enemiesPierced;
     private Vector2 spawnPosition;
 
     private void Start()
@@ -42,12 +43,17 @@ public sealed class Projectile : MonoBehaviour
                         enemy.Hit(damage);
                         if (enemiesPierced.Count > pierce)
                         {
-                            Destroy(gameObject);
+                            OnEnemyHit();
                             break;
                         }
                     }
                 }
             }
         }
+    }
+
+    protected virtual void OnEnemyHit()
+    {
+        Destroy(gameObject);
     }
 }
